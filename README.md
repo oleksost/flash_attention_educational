@@ -1,4 +1,4 @@
-# Flash Attaetion Educational
+# Flash Attention Educational
 Implementation of flash attention for educational purposes. This is under construction.
 
 This will include:
