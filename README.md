@@ -8,4 +8,5 @@ This will include:
     - [x] backward
 - [ ] implementation in C++
     - [ ] forward
-- [ ] implementation in triton
+- [ ] implementation in tritongit remote set-url origin
+- [ ] Profile + optimize
