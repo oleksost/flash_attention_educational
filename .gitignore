@@ -1,0 +1,10 @@
+# Ignore build directories
+build/
+*.o
+*.out
+*.so
+*.dll
+*.exe
+*.a
+cuda_build/
+.vscode/
