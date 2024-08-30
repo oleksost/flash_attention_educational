@@ -85,8 +85,8 @@ __global__ void flash_attn_forward_kernel(
                     m = new_m;
                 }
             }
-            __syncthreads();
         }
+        __syncthreads();
 
         if (r_idx < s)
         {
@@ -98,10 +98,10 @@ __global__ void flash_attn_forward_kernel(
 
 std::tuple<torch::Tensor, torch::Tensor, torch::Tensor> flash_attention_forwad(torch::Tensor q, torch::Tensor k, torch::Tensor v, float tau)
 {
-    int b = q.size(0);
-    int h = q.size(1);
-    int s = q.size(2);
-    int d_head = q.size(3);
+    const auto b = q.size(0);
+    const auto h = q.size(1);
+    const auto s = q.size(2);
+    const auto d_head = q.size(3);
 
     int device = 0;
     cudaDeviceProp deviceProp;
@@ -115,7 +115,7 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor> flash_attention_forwad(t
     int T_r = (s + B_r - 1) / B_r;
     int T_c = (s + B_c - 1) / B_c;
 
-    torch::Tensor out = torch::zeros_like(q);
+    auto out = torch::empty({b, h, s, d_head}, torch::TensorOptions().dtype(torch::kFloat32).device(q.device()));
 
     dim3 grid(b, h);
     dim3 block(B_r);
@@ -124,7 +124,20 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor> flash_attention_forwad(t
     auto l_hbm = torch::zeros({b, h, s}, torch::CUDA(torch::kFloat32));
     auto m_hbm = torch::zeros({b, h, s}, torch::CUDA(torch::kFloat32));
 
-    flash_attn_forward_kernel<<<grid, block, shared_mem_size>>>(
+
+    std::cout << "q.size(2): " << q.size(2) << std::endl;
+    std::cout << "B_r: " << B_r << std::endl;
+    std::cout << "B_c: " << B_c << std::endl;
+    std::cout << "T_r: " << T_r << std::endl;
+    std::cout << "T_c: " << T_c << std::endl;
+    std::cout << "shared_mem_size: " << shared_mem_size << std::endl;
+    std::cout << "b: " << b << std::endl;
+    std::cout << "h: " << h << std::endl;
+    std::cout << "s: " << s << std::endl;
+    std::cout << "d_head: " << d_head << std::endl;
+    
+
+    flash_attn_forward_kernel<<<grid, block, shared_mem_size, torch::cuda::getCurrentCUDAStream()>>>(
         q.data_ptr<float>(),
         k.data_ptr<float>(),
         v.data_ptr<float>(),
@@ -140,6 +153,8 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor> flash_attention_forwad(t
         d_head,
         B_r,
         B_c);
+    // synchronize
+    C10_CUDA_CHECK(cudaGetLastError());
 
     // check CUDA error status (calls cudaGetLastError())
     C10_CUDA_KERNEL_LAUNCH_CHECK();

@@ -31,7 +31,7 @@ def compile_fa_forward():
         functions=["flash_attention_forwad"],
         with_cuda=True,
         extra_cuda_cflags=["-G","-g"], # "-g" is for debugging, "-G" is for device-side debugging
-        extra_cflags=['-g'],  # Add '-g' for debug symbols in C++
+        extra_cflags=['-O0 -g'],  # Add '-g' for debug symbols in C++
         build_directory='cuda_build/',
     )
     return ext
@@ -57,7 +57,7 @@ class FlashAttn(Function):
     @staticmethod
     def forward(ctx, q, k, v):
         # q, k, v : (b, h, s, d)
-        tau = math.sqrt(q.size(-1))
+        tau = 1 / math.sqrt(q.size(-1))
         # import pdb; pdb.set_trace()
         out, l, m = fa_forward_kernel.flash_attention_forwad(q, k, v, tau)
 
@@ -143,7 +143,7 @@ def main():
 
     o_attn, out_attn = attention(x, use_flash=False)
     # o_attn.sum().backward()
-    # import pdb; pdb.set_trace()
+    import pdb; pdb.set_trace()
     print("Forward pass activations allighn:", torch.allclose(out_attn, out_attn_fa, atol=1e-2))
     print("Forward outputs align:", torch.allclose(o_fa.sum(), o_attn.sum(), atol=1e-1))
 

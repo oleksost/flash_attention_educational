@@ -1,5 +1,7 @@
 # Flash Attention Educational
-Implementation of flash attention for educational purposes. This is under construction.
+Implementation of flash attention for educational purposes. This does not implement dropout and masking to keep it simple.
+
+This is under construction.
 
 This will include:
 
@@ -7,6 +9,6 @@ This will include:
     - [x] forward
     - [x] backward
 - [ ] implementation in C++
-    - [ ] forward
+    - [ ] forward -- still not the same result as standard attention
 - [ ] implementation in tritongit remote set-url origin
 - [ ] Profile + optimize
