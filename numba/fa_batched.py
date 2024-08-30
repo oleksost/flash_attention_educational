@@ -205,7 +205,7 @@ class FlashAttn(Function):
         # out should be b, h, s, d, where d is
         out = torch.zeros(b, h, s, d_head).to(device)
         l = torch.zeros(b, h, s).to(device)
-        m = torch.zeros(b, h, s).to(device)
+        m = - torch.ones(b, h, s).to(device) * math.inf
 
         q_numba = numba.cuda.as_cuda_array(q.detach())
         k_numba = numba.cuda.as_cuda_array(k.detach())
