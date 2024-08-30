@@ -9,6 +9,6 @@ This will include:
     - [x] forward
     - [x] backward
 - [ ] implementation in C++
-    - [ ] forward -- still not the same result as standard attention
+    - [X] forward
 - [ ] implementation in tritongit remote set-url origin
 - [ ] Profile + optimize

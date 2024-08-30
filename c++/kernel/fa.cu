@@ -77,8 +77,9 @@ __global__ void flash_attn_forward_kernel(
                     // Update output Oi += softmax * Vj
                     for (int v_dim = 0; v_dim < d_head; v_dim++)
                     {
-                        out[block_b * h * s * d_head + block_h * s * d_head + r_idx * d_head + v_dim] =
-                            out[block_b * h * s * d_head + block_h * s * d_head + r_idx * d_head + v_dim] * (curr_l * exp_max / new_l) + (exp_Sij / new_l) * V_shared[b_c_local * d_head + v_dim];
+                        // atomicAdd is not needed here, but just in case
+                        atomicAdd(&out[block_b * h * s * d_head + block_h * s * d_head + r_idx * d_head + v_dim],
+                            out[block_b * h * s * d_head + block_h * s * d_head + r_idx * d_head + v_dim] * (curr_l * exp_max / new_l) + (exp_Sij / new_l) * V_shared[b_c_local * d_head + v_dim]);
                     }
 
                     l = new_l;
