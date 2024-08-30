@@ -10,5 +10,5 @@ This will include:
     - [x] backward
 - [ ] implementation in C++
     - [X] forward
-- [ ] implementation in tritongit remote set-url origin
+- [ ] implementation in triton
 - [ ] Profile + optimize
