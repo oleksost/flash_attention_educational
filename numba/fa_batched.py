@@ -53,7 +53,7 @@ def flash_attn_forward_kernel(q, k, v, out, T_r, T_c, tau, l_hbm, m_hbm):
             for c in range(Q_shared.shape[1]):
                 Q_shared[thread_i, c] = q[block_b, block_h, r_idx, c]
         cuda.syncthreads()
-        l, m = 0.0, 0.0
+        l, m = 0.0, -math.inf
         for i in range(T_c):
             c_idx = i * B_c + thread_i
             if c_idx < s:
