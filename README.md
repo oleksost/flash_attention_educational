@@ -10,5 +10,6 @@ This will include:
     - [x] backward
 - [ ] implementation in C++
     - [X] forward
+    - [ ] backward
 - [ ] implementation in triton
 - [ ] Profile + optimize
