@@ -13,3 +13,9 @@ This will include:
     - [ ] backward
 - [ ] implementation in triton
 - [ ] Profile + optimize
+
+
+
+_______
+### Known issues
+- [ ] for numba implementation backward grads for Q and K do not align with standard attention grads
