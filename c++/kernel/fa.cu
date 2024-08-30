@@ -39,9 +39,11 @@ __global__ void flash_attn_forward_kernel(
                 Q_shared[thread_i * d_head + c] = q[block_b * h * s * d_head + block_h * s * d_head + r_idx * d_head + c];
             }
         }
+        // int index = block_b * h * s * d_head + block_h * s * d_head + r_idx * d_head;
+        // printf("block_b: %d, block_h: %d, thead: %d, j: %d, value q: %f\n", block_b, block_h, thread_i, j, q[index]);
         __syncthreads();
 
-        float l = 0.0f, m = 0.0f;
+        float l = 0.0f, m = -INFINITY;
         for (int i = 0; i < T_c; i++)
         {
             int c_idx = i * B_c + thread_i;
@@ -73,13 +75,12 @@ __global__ void flash_attn_forward_kernel(
                     float exp_Sij = expf(Sij - new_m);
                     float exp_max = expf(curr_m - new_m);
                     float new_l = curr_l * exp_max + exp_Sij;
-
+                    // printf("new_l: %f, new_m: %f, Sij: %f, exp_Sij: %f, exp_max: %f\n", new_l, new_m, Sij, exp_Sij, exp_max);
                     // Update output Oi += softmax * Vj
                     for (int v_dim = 0; v_dim < d_head; v_dim++)
-                    {
-                        // atomicAdd is not needed here, but just in case
-                        atomicAdd(&out[block_b * h * s * d_head + block_h * s * d_head + r_idx * d_head + v_dim],
-                            out[block_b * h * s * d_head + block_h * s * d_head + r_idx * d_head + v_dim] * (curr_l * exp_max / new_l) + (exp_Sij / new_l) * V_shared[b_c_local * d_head + v_dim]);
+                    {   
+                        int index = block_b * h * s * d_head + block_h * s * d_head + r_idx * d_head + v_dim;
+                        out[index] = out[index] * (curr_l * exp_max / new_l) + (exp_Sij / new_l) * V_shared[b_c_local * d_head + v_dim];
                     }
 
                     l = new_l;
@@ -116,7 +117,7 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor> flash_attention_forwad(t
     int T_r = (s + B_r - 1) / B_r;
     int T_c = (s + B_c - 1) / B_c;
 
-    auto out = torch::empty({b, h, s, d_head}, torch::TensorOptions().dtype(torch::kFloat32).device(q.device()));
+    auto out = torch::zeros({b, h, s, d_head}, torch::CUDA(torch::kFloat32));
 
     dim3 grid(b, h);
     dim3 block(B_r);
@@ -124,18 +125,17 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor> flash_attention_forwad(t
 
     auto l_hbm = torch::zeros({b, h, s}, torch::CUDA(torch::kFloat32));
     auto m_hbm = torch::zeros({b, h, s}, torch::CUDA(torch::kFloat32));
-
-
-    std::cout << "q.size(2): " << q.size(2) << std::endl;
-    std::cout << "B_r: " << B_r << std::endl;
-    std::cout << "B_c: " << B_c << std::endl;
-    std::cout << "T_r: " << T_r << std::endl;
-    std::cout << "T_c: " << T_c << std::endl;
-    std::cout << "shared_mem_size: " << shared_mem_size << std::endl;
-    std::cout << "b: " << b << std::endl;
-    std::cout << "h: " << h << std::endl;
-    std::cout << "s: " << s << std::endl;
-    std::cout << "d_head: " << d_head << std::endl;
+    // for DEBUGING
+    // std::cout << "q.size(2): " << q.size(2) << std::endl;
+    // std::cout << "B_r: " << B_r << std::endl;
+    // std::cout << "B_c: " << B_c << std::endl;
+    // std::cout << "T_r: " << T_r << std::endl;
+    // std::cout << "T_c: " << T_c << std::endl;
+    // std::cout << "shared_mem_size: " << shared_mem_size << std::endl;
+    // std::cout << "b: " << b << std::endl;
+    // std::cout << "h: " << h << std::endl;
+    // std::cout << "s: " << s << std::endl;
+    // std::cout << "d_head: " << d_head << std::endl;
     
 
     flash_attn_forward_kernel<<<grid, block, shared_mem_size, torch::cuda::getCurrentCUDAStream()>>>(
@@ -155,7 +155,7 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor> flash_attention_forwad(t
         B_r,
         B_c);
     // synchronize
-    C10_CUDA_CHECK(cudaGetLastError());
+    // C10_CUDA_CHECK(cudaGetLastError());
 
     // check CUDA error status (calls cudaGetLastError())
     C10_CUDA_KERNEL_LAUNCH_CHECK();

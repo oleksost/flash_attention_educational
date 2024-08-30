@@ -58,12 +58,9 @@ class FlashAttn(Function):
     def forward(ctx, q, k, v):
         # q, k, v : (b, h, s, d)
         tau = 1 / math.sqrt(q.size(-1))
-        # import pdb; pdb.set_trace()
+        q, k, v = q.contiguous(), k.contiguous(), v.contiguous()
         out, l, m = fa_forward_kernel.flash_attention_forwad(q, k, v, tau)
-
-        # we will need to save l and m, but they ae only s long, so we can store them in ctx
-        # ctx.save_for_backward(l, m, q.detach(), k.detach(), v.detach(), out)
-        # import pdb; pdb.set_trace()
+        ctx.save_for_backward(l, m, q.detach(), k.detach(), v.detach(), out)
         return out
 
     @staticmethod
@@ -143,7 +140,7 @@ def main():
 
     o_attn, out_attn = attention(x, use_flash=False)
     # o_attn.sum().backward()
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     print("Forward pass activations allighn:", torch.allclose(out_attn, out_attn_fa, atol=1e-2))
     print("Forward outputs align:", torch.allclose(o_fa.sum(), o_attn.sum(), atol=1e-1))
 
